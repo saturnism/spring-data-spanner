@@ -21,6 +21,10 @@ import com.google.cloud.spanner.*;
 import org.springframework.data.mapping.PersistentPropertyAccessor;
 import org.springframework.data.mapping.PropertyHandler;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Created by rayt on 3/14/17.
  */
@@ -42,8 +46,8 @@ public class SpannerMutationFactory {
     return createMutation(Mutation.Op.REPLACE, object);
   }
 
-  public Mutation update(Object object) {
-    return createMutation(Mutation.Op.UPDATE, object);
+  public Mutation update(Object object, String ... properties) {
+    return createMutation(Mutation.Op.UPDATE, object, properties);
   }
 
   public Mutation delete(Object object) {
@@ -60,7 +64,8 @@ public class SpannerMutationFactory {
     return mutation;
   }
 
-  public Mutation createMutation(Mutation.Op op, Object object) {
+  public Mutation createMutation(Mutation.Op op, Object object, String ... properties) {
+    final Set<String> includeProperties = new HashSet<>(Arrays.asList(properties));
     final Class<?> entityType = object.getClass();
     final BasicSpannerPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(object.getClass());
     final Mutation.WriteBuilder writeBuilder = writeBuilder(op, persistentEntity.tableName());
@@ -68,19 +73,23 @@ public class SpannerMutationFactory {
     persistentEntity.doWithProperties(new PropertyHandler<SpannerPersistentProperty>() {
       @Override
       public void doWithPersistentProperty(SpannerPersistentProperty spannerPersistentProperty) {
+        if (!spannerPersistentProperty.isIdProperty() && op == Mutation.Op.UPDATE && !includeProperties.contains(spannerPersistentProperty.getName())) {
+          return;
+        }
         Object value = accessor.getProperty(spannerPersistentProperty);
+        Class<?> propertyType = spannerPersistentProperty.getType();
         ValueBinder<Mutation.WriteBuilder> set = writeBuilder.set(spannerPersistentProperty.getFieldName());
-        if (value instanceof String) {
+        if (String.class.isAssignableFrom(propertyType)) {
           set.to((String) value);
-        } else if (value instanceof Boolean) {
+        } else if (Boolean.class.isAssignableFrom(propertyType)) {
           set.to((Boolean) value);
-        } else if (value instanceof Date) {
+        } else if (Date.class.isAssignableFrom(propertyType)) {
           set.to((Date) value);
-        } else if (value instanceof Double) {
+        } else if (Double.class.isAssignableFrom(propertyType)) {
           set.to((Double) value);
-        } else if (value instanceof Long) {
+        } else if (Long.class.isAssignableFrom(propertyType)) {
           set.to((Long) value);
-        } else if (value instanceof Timestamp) {
+        } else if (Timestamp.class.isAssignableFrom(propertyType)) {
           set.to((Timestamp) value);
         } else {
           throw new SpannerDataException(String.format("Unsupported mapping for type: %s", value.getClass()));

@@ -35,6 +35,6 @@ public interface SpannerOperations {
   void delete(Object object);
 
   void insert(Object object);
-  void update(Object object);
+  void update(Object object, String ... properties);
   void upsert(Object object);
 }

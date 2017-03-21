@@ -17,7 +17,6 @@
 package org.springframework.data.spanner.core;
 
 import com.google.cloud.spanner.*;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -26,10 +25,10 @@ import org.springframework.data.spanner.core.mapping.SpannerMappingContext;
 import org.springframework.data.spanner.core.mapping.SpannerMutationFactory;
 import org.springframework.data.spanner.core.mapping.SpannerStructObjectMapper;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Created by rayt on 3/20/17.
@@ -41,6 +40,7 @@ public class SpannerTemplate implements SpannerOperations, ApplicationContextAwa
   private final SpannerMappingContext mappingContext;
   private final SpannerStructObjectMapper objectMapper;
   private final SpannerMutationFactory mutationFactory;
+  private final SpannerReadContextTemplate readContextTemplate;
 
   public SpannerTemplate(DatabaseClient databaseClient, SpannerMappingContext mappingContext) {
     this.databaseClient = databaseClient;
@@ -48,6 +48,7 @@ public class SpannerTemplate implements SpannerOperations, ApplicationContextAwa
 
     this.objectMapper = new SpannerStructObjectMapper(mappingContext);
     this.mutationFactory = new SpannerMutationFactory(mappingContext);
+    this.readContextTemplate = new SpannerReadContextTemplate(this.objectMapper);
   }
 
   public DatabaseClient getDatabaseClient() {
@@ -56,14 +57,7 @@ public class SpannerTemplate implements SpannerOperations, ApplicationContextAwa
 
   @Override
   public <T> List<T> find(Class<T> entityClass, Statement statement, Options.QueryOption... options) {
-    ResultSet rs = this.databaseClient.readOnlyTransaction().executeQuery(statement, options);
-    List<T> list = new LinkedList<T>();
-    while (rs.next()) {
-      T object = BeanUtils.instantiate(entityClass);
-      objectMapper.map(rs.getCurrentRowAsStruct(), object);
-      list.add(object);
-    }
-    return Collections.unmodifiableList(list);
+    return readContextTemplate.find(this.databaseClient.readOnlyTransaction(), entityClass, statement, options);
   }
 
   @Override
@@ -82,7 +76,7 @@ public class SpannerTemplate implements SpannerOperations, ApplicationContextAwa
   }
 
   @Override
-  public void update(Object object) {
+  public void update(Object object, String ... properties) {
     Mutation mutation = mutationFactory.update(object);
     this.databaseClient.write(Arrays.asList(mutation));
   }
@@ -110,5 +104,17 @@ public class SpannerTemplate implements SpannerOperations, ApplicationContextAwa
   @Override
   public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
     this.applicationContext = applicationContext;
+  }
+
+  public void transaction(final Consumer<SpannerTransactionContext> unitOfWork) {
+    this.databaseClient.readWriteTransaction().run(new TransactionRunner.TransactionCallable<Void>() {
+      @Nullable
+      @Override
+      public Void run(TransactionContext transactionContext) throws Exception {
+        SpannerTransactionContext ctx = new SpannerTransactionContext(transactionContext, readContextTemplate, mappingContext, mutationFactory);
+        unitOfWork.accept(ctx);
+        return null;
+      }
+    });
   }
 }
