@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  ~ Copyright 2017 Google Inc. All rights reserved.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.springframework.data</groupId>
+    <artifactId>spring-data-spanner-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Spring Data Spanner</name>
+    <description>Spanner support for Spring Data</description>
+    <url>http://projects.spring.io/spring-data-mongodb</url>
+
+    <modules>
+        <module>spring-data-spanner-core</module>
+        <module>spring-data-spanner-autoconfiguration</module>
+        <module>spring-data-spanner-starter</module>
+    </modules>
+
+    <properties>
+        <project.type>multi</project.type>
+        <dist.id>spring-data-spanner</dist.id>
+        <springdata.commons>1.13.1.RELEASE</springdata.commons>
+        <springboot.version>1.5.2.RELEASE</springboot.version>
+        <spanner.version>0.10.0-beta</spanner.version>
+        <bundlor.enabled>false</bundlor.enabled>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
+
+    <developers>
+        <developer>
+            <id>saturnism</id>
+            <name>Ray Tsang</name>
+            <email>saturnism at gmail.com</email>
+            <organization>Google</organization>
+            <organizationUrl>http://cloud.google.com</organizationUrl>
+            <roles>
+                <role>Project Lead</role>
+            </roles>
+            <timezone>-5</timezone>
+        </developer>
+        <developer>
+            <id>joshlong</id>
+            <name>Josh Long</name>
+            <email></email>
+            <organization>Pivotal</organization>
+            <organizationUrl>http://www.gopivotal.com</organizationUrl>
+            <roles>
+                <role>Project Lead</role>
+            </roles>
+            <timezone>-8</timezone>
+        </developer>
+    </developers>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.data.build</groupId>
+                <artifactId>spring-data-parent</artifactId>
+                <version>1.9.1.RELEASE</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter</artifactId>
+                <version>${springboot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.cloud</groupId>
+                <artifactId>google-cloud-spanner</artifactId>
+                <version>${spanner.version}</version>
+                <exclusions>
+                    <exclusion> <!-- exclude an old version of Guava -->
+                        <groupId>com.google.guava</groupId>
+                        <artifactId>guava-jdk5</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.google.api-client</groupId>
+                        <artifactId>google-api-client-appengine</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.data</groupId>
+                <artifactId>spring-data-commons</artifactId>
+                <version>${springdata.commons}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <repositories>
+        <repository>
+            <id>spring-libs-snapshot</id>
+            <url>https://repo.spring.io/libs-snapshot</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>spring-plugins-release</id>
+            <url>https://repo.spring.io/plugins-release</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+</project>
