@@ -57,7 +57,8 @@ public class SpannerReadContextTemplate {
   public <T> T find(ReadContext readContext, Class<T> entityClass, Key key) {
     BasicSpannerPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entityClass);
     T object = BeanUtils.instantiate(entityClass);
-    readContext.readRow(persistentEntity.tableName(), key, persistentEntity.columns());
+    Struct row = readContext.readRow(persistentEntity.tableName(), key, persistentEntity.columns());
+    objectMapper.map(row, object);
     return object;
   }
 }
