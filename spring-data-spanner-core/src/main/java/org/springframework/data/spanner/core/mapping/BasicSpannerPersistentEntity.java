@@ -23,6 +23,8 @@ import org.springframework.data.mapping.model.BasicPersistentEntity;
 import org.springframework.data.util.TypeInformation;
 import org.springframework.util.StringUtils;
 
+import java.util.*;
+
 /**
  * Created by rayt on 3/14/17.
  */
@@ -30,6 +32,8 @@ public class BasicSpannerPersistentEntity<T> extends BasicPersistentEntity<T, Sp
     SpannerPersistentEntity<T>, ApplicationContextAware {
 
   private final String tableName;
+  private final Set<String> columnNames = new HashSet<>();
+  private final Map<String, String> columnNameToPropertyName = new HashMap<>();
 
   public BasicSpannerPersistentEntity(TypeInformation<T> information) {
     super(information);
@@ -39,10 +43,17 @@ public class BasicSpannerPersistentEntity<T> extends BasicPersistentEntity<T, Sp
 
     Table table = this.findAnnotation(Table.class);
     if (table != null) {
-      this.tableName = StringUtils.hasText(table.value()) ? table.value() : fallback;
+      this.tableName = StringUtils.hasText(table.name()) ? table.name() : fallback;
     } else {
       this.tableName = fallback;
     }
+  }
+
+  @Override
+  public void addPersistentProperty(SpannerPersistentProperty property) {
+    super.addPersistentProperty(property);
+    this.columnNames.add(property.getColumnName());
+    columnNameToPropertyName.put(property.getColumnName(), property.getName());
   }
 
   protected String extractTableNameFromClass(Class<?> entityClass) {
@@ -56,6 +67,16 @@ public class BasicSpannerPersistentEntity<T> extends BasicPersistentEntity<T, Sp
   @Override
   public String tableName() {
     return this.tableName;
+  }
+
+  @Override
+  public SpannerPersistentProperty getPersistentPropertyByColumnName(String columnName) {
+    return getPersistentProperty(columnNameToPropertyName.get(columnName));
+  }
+
+  @Override
+  public Iterable<String> columns() {
+    return Collections.unmodifiableSet(columnNames);
   }
 
   @Override

@@ -14,14 +14,22 @@
  * limitations under the License.
  */
 
-package org.springframework.data.spanner.core.mapping;
+package org.springframework.data.spanner.repository.config;
 
+import org.springframework.data.repository.config.RepositoryConfigurationExtensionSupport;
+import org.springframework.data.spanner.repository.support.SpannerRepositoryFactoryBean;
 
-import java.lang.annotation.*;
+/**
+ * Created by rayt on 3/23/17.
+ */
+public class SpannerRepositoryConfigurationExtension extends RepositoryConfigurationExtensionSupport {
+  @Override
+  protected String getModulePrefix() {
+    return "spanner";
+  }
 
-@Documented
-@Target(value= ElementType.FIELD)
-@Retention(value= RetentionPolicy.RUNTIME)
-public @interface Column {
-  String name();
+  @Override
+  public String getRepositoryFactoryClassName() {
+    return SpannerRepositoryFactoryBean.class.getName();
+  }
 }

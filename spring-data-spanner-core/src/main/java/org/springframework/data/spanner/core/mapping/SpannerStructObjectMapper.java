@@ -37,11 +37,11 @@ public class SpannerStructObjectMapper {
 
     for (Type.StructField field : s.getType().getStructFields()) {
       String name = field.getName();
-      SpannerPersistentProperty property = persistentEntity.getPersistentProperty(name);
+      SpannerPersistentProperty property = persistentEntity.getPersistentPropertyByColumnName(name);
       if (s.isNull(name)) {
         if (property.getType().isPrimitive()) {
           // TODO probably not good to do this anyways...
-          // ignore
+          // TODO or maybe throw an error?
         }
         else { accessor.setProperty(property, null); }
         continue;

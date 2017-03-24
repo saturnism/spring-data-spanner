@@ -16,10 +16,7 @@
 
 package org.springframework.data.spanner.core;
 
-import com.google.cloud.spanner.Key;
-import com.google.cloud.spanner.Options;
-import com.google.cloud.spanner.ResultSet;
-import com.google.cloud.spanner.Statement;
+import com.google.cloud.spanner.*;
 
 import java.util.List;
 
@@ -27,14 +24,20 @@ import java.util.List;
  * Created by rayt on 3/20/17.
  */
 public interface SpannerOperations {
+  DatabaseClient getDatabaseClient();
+  <T> T find(Class<T> entityClass, Key key);
+  <T> List<T> find(Class<T> entityClass, KeySet keys, Options.ReadOption... options);
   <T> List<T> find(Class<T> entityClass, Statement statement, Options.QueryOption... options);
 
-  <T> List<T> findAll(Class<T> entityClass, Options.QueryOption ... options);
+  <T> List<T> findAll(Class<T> entityClass, Options.ReadOption ... options);
 
-  void delete(Class<?> entityClass, Key key);
-  void delete(Object object);
+  <T> void delete(Class<T> entityClass, Key key);
+  <T> void delete(T object);
+  <T> void delete(Class<T> entityClass, Iterable<? extends T> objects);
+  <T> void delete(Class<T> entityClass, KeySet keys);
 
-  void insert(Object object);
-  void update(Object object, String ... properties);
-  void upsert(Object object);
+  <T> void insert(T object);
+  <T> void update(T object, String ... properties);
+  <T> void upsert(T object);
+  <T> long count(Class<T> entityClass);
 }

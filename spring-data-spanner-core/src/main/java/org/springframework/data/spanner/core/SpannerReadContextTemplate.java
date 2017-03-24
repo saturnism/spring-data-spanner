@@ -18,38 +18,46 @@ package org.springframework.data.spanner.core;
 
 import com.google.cloud.spanner.*;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
 import org.springframework.data.spanner.core.mapping.BasicSpannerPersistentEntity;
 import org.springframework.data.spanner.core.mapping.SpannerMappingContext;
-import org.springframework.data.spanner.core.mapping.SpannerMutationFactory;
+import org.springframework.data.spanner.core.mapping.SpannerResultSetMapper;
 import org.springframework.data.spanner.core.mapping.SpannerStructObjectMapper;
 
-import javax.annotation.Nullable;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * Created by rayt on 3/20/17.
  */
 public class SpannerReadContextTemplate {
+  private final SpannerMappingContext mappingContext;
   private final SpannerStructObjectMapper objectMapper;
+  private final SpannerResultSetMapper resultSetMapper;
 
-  public SpannerReadContextTemplate(SpannerStructObjectMapper objectMapper) {
+  public SpannerReadContextTemplate(SpannerMappingContext mappingContext, SpannerStructObjectMapper objectMapper) {
+    this.mappingContext = mappingContext;
     this.objectMapper = objectMapper;
+    this.resultSetMapper = new SpannerResultSetMapper(objectMapper);
+  }
+
+  public <T> List<T> findAll(ReadContext readContext, Class<T> entityClass, Options.ReadOption... options) {
+    return this.find(readContext, entityClass, KeySet.all(), options);
   }
 
   public <T> List<T> find(ReadContext readContext, Class<T> entityClass, Statement statement, Options.QueryOption... options) {
-    ResultSet rs = readContext.executeQuery(statement, options);
-    List<T> list = new LinkedList<T>();
-    while (rs.next()) {
-      T object = BeanUtils.instantiate(entityClass);
-      objectMapper.map(rs.getCurrentRowAsStruct(), object);
-      list.add(object);
-    }
-    return Collections.unmodifiableList(list);
+    ResultSet resultSet = readContext.executeQuery(statement, options);
+    return this.resultSetMapper.mapToUnmodifiableList(resultSet, entityClass);
+  }
+
+  public <T> List<T> find(ReadContext readContext, Class<T> entityClass, KeySet keys, Options.ReadOption... options) {
+    BasicSpannerPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entityClass);
+    ResultSet resultSet = readContext.read(persistentEntity.tableName(), keys, persistentEntity.columns(), options);
+    return this.resultSetMapper.mapToUnmodifiableList(resultSet, entityClass);
+  }
+
+  public <T> T find(ReadContext readContext, Class<T> entityClass, Key key) {
+    BasicSpannerPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entityClass);
+    T object = BeanUtils.instantiate(entityClass);
+    readContext.readRow(persistentEntity.tableName(), key, persistentEntity.columns());
+    return object;
   }
 }

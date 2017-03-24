@@ -16,7 +16,6 @@
 
 package org.springframework.data.spanner.core.mapping;
 
-import com.google.cloud.ByteArray;
 import com.google.cloud.spanner.*;
 import org.springframework.data.mapping.PersistentPropertyAccessor;
 import org.springframework.data.mapping.PropertyHandler;
@@ -30,27 +29,40 @@ import java.util.Set;
  */
 public class SpannerMutationFactory {
   private final SpannerMappingContext mappingContext;
+
   public SpannerMutationFactory(SpannerMappingContext mappingContext) {
     this.mappingContext = mappingContext;
   }
 
-  public Mutation insert(Object object) {
+  public <T> Mutation insert(T object) {
     return createMutation(Mutation.Op.INSERT, object);
   }
 
-  public Mutation upsert(Object object) {
+  public <T> Mutation upsert(T object) {
     return createMutation(Mutation.Op.INSERT_OR_UPDATE, object);
   }
 
-  public Mutation replace(Object object) {
+  public <T> Mutation replace(T object) {
     return createMutation(Mutation.Op.REPLACE, object);
   }
 
-  public Mutation update(Object object, String ... properties) {
+  public <T> Mutation update(T object, String... properties) {
     return createMutation(Mutation.Op.UPDATE, object, properties);
   }
 
-  public Mutation delete(Object object) {
+  public <T> Mutation delete(Class<T> entityClass, Iterable<? extends T> entities) {
+    final BasicSpannerPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entityClass);
+    KeySet.Builder builder = KeySet.newBuilder();
+    for (T entity : entities) {
+      final PersistentPropertyAccessor accessor = persistentEntity.getPropertyAccessor(entity);
+      SpannerPersistentProperty idProperty = persistentEntity.getIdProperty();
+      Object value = accessor.getProperty(idProperty);
+      builder.addKey(Key.of(value));
+    }
+    return Mutation.delete(persistentEntity.tableName(), builder.build());
+  }
+
+  public <T> Mutation delete(T object) {
     final Class<?> entityType = object.getClass();
     final BasicSpannerPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(object.getClass());
     final PersistentPropertyAccessor accessor = persistentEntity.getPropertyAccessor(object);
@@ -58,13 +70,13 @@ public class SpannerMutationFactory {
     final SpannerPersistentProperty idProperty = persistentEntity.getIdProperty();
     Class<?> propertyType = idProperty.getType();
     Object value = accessor.getProperty(idProperty);
-    Key key = Key.newBuilder().appendObject(value).build();
+    Key key = Key.of(value);
 
     final Mutation mutation = Mutation.delete(persistentEntity.tableName(), key);
     return mutation;
   }
 
-  public Mutation createMutation(Mutation.Op op, Object object, String ... properties) {
+  public <T> Mutation createMutation(Mutation.Op op, T object, String... properties) {
     final Set<String> includeProperties = new HashSet<>(Arrays.asList(properties));
     final Class<?> entityType = object.getClass();
     final BasicSpannerPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(object.getClass());
@@ -78,7 +90,7 @@ public class SpannerMutationFactory {
         }
         Object value = accessor.getProperty(spannerPersistentProperty);
         Class<?> propertyType = spannerPersistentProperty.getType();
-        ValueBinder<Mutation.WriteBuilder> set = writeBuilder.set(spannerPersistentProperty.getFieldName());
+        ValueBinder<Mutation.WriteBuilder> set = writeBuilder.set(spannerPersistentProperty.getColumnName());
         if (String.class.isAssignableFrom(propertyType)) {
           set.to((String) value);
         } else if (Boolean.class.isAssignableFrom(propertyType)) {

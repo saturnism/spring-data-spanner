@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package org.springframework.data.spanner.core.mapping;
+package org.springframework.data.spanner.repository;
 
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.spanner.core.SpannerOperations;
 
-import java.lang.annotation.*;
+import java.io.Serializable;
 
-@Documented
-@Target(value= ElementType.FIELD)
-@Retention(value= RetentionPolicy.RUNTIME)
-public @interface Column {
-  String name();
+/**
+ * Created by rayt on 3/23/17.
+ */
+public interface SpannerRepository<T, ID extends Serializable> extends CrudRepository<T, ID> {
+  SpannerOperations getSpannerOperations();
 }

@@ -41,9 +41,9 @@ public class BasicSpannerPersistentProperty extends AnnotationBasedPersistentPro
   }
 
   @Override
-  public String getFieldName() {
-    if (hasExplicitFieldName()) {
-      return getAnnotatedFieldName();
+  public String getColumnName() {
+    if (hasExplicitColumnName()) {
+      return getAnnotatedColumnName();
     }
 
     String fieldName = fieldNamingStrategy.getFieldName(this);
@@ -56,16 +56,16 @@ public class BasicSpannerPersistentProperty extends AnnotationBasedPersistentPro
     return fieldName;
   }
 
-  protected boolean hasExplicitFieldName() {
-    return StringUtils.hasText(getAnnotatedFieldName());
+  protected boolean hasExplicitColumnName() {
+    return StringUtils.hasText(getAnnotatedColumnName());
   }
 
-  private String getAnnotatedFieldName() {
+  private String getAnnotatedColumnName() {
 
     Column annotation = findAnnotation(Column.class);
 
-    if (annotation != null && StringUtils.hasText(annotation.value())) {
-      return annotation.value();
+    if (annotation != null && StringUtils.hasText(annotation.name())) {
+      return annotation.name();
     }
 
     return null;

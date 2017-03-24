@@ -14,14 +14,19 @@
  * limitations under the License.
  */
 
-package org.springframework.data.spanner.core.mapping;
+package org.springframework.data.spanner.repository.support;
 
+import org.springframework.data.repository.core.support.PersistentEntityInformation;
+import org.springframework.data.spanner.core.mapping.SpannerPersistentEntity;
 
-import java.lang.annotation.*;
+import java.io.Serializable;
 
-@Documented
-@Target(value= ElementType.FIELD)
-@Retention(value= RetentionPolicy.RUNTIME)
-public @interface Column {
-  String name();
+/**
+ * Created by rayt on 3/23/17.
+ */
+public class MappingSpannerEntityInformation<T, ID extends Serializable> extends PersistentEntityInformation<T, ID>
+    implements SpannerEntityInformation<T, ID> {
+  public MappingSpannerEntityInformation(SpannerPersistentEntity<T> entity) {
+    super(entity);
+  }
 }

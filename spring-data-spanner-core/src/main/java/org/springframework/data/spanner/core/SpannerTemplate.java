@@ -20,10 +20,7 @@ import com.google.cloud.spanner.*;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.data.spanner.core.mapping.BasicSpannerPersistentEntity;
-import org.springframework.data.spanner.core.mapping.SpannerMappingContext;
-import org.springframework.data.spanner.core.mapping.SpannerMutationFactory;
-import org.springframework.data.spanner.core.mapping.SpannerStructObjectMapper;
+import org.springframework.data.spanner.core.mapping.*;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -48,7 +45,7 @@ public class SpannerTemplate implements SpannerOperations, ApplicationContextAwa
 
     this.objectMapper = new SpannerStructObjectMapper(mappingContext);
     this.mutationFactory = new SpannerMutationFactory(mappingContext);
-    this.readContextTemplate = new SpannerReadContextTemplate(this.objectMapper);
+    this.readContextTemplate = new SpannerReadContextTemplate(mappingContext, this.objectMapper);
   }
 
   public DatabaseClient getDatabaseClient() {
@@ -56,17 +53,24 @@ public class SpannerTemplate implements SpannerOperations, ApplicationContextAwa
   }
 
   @Override
-  public <T> List<T> find(Class<T> entityClass, Statement statement, Options.QueryOption... options) {
-    return readContextTemplate.find(this.databaseClient.readOnlyTransaction(), entityClass, statement, options);
+  public <T> T find(Class<T> entityClass, Key key) {
+    return readContextTemplate.find(this.databaseClient.singleUse(), entityClass, key);
   }
 
   @Override
-  public <T> List<T> findAll(Class<T> entityClass, Options.QueryOption ... options) {
-    BasicSpannerPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entityClass);
-    String tableName = persistentEntity.tableName();
+  public <T> List<T> find(Class<T> entityClass, KeySet keys, Options.ReadOption... options) {
+    return readContextTemplate.find(this.databaseClient.singleUse(), entityClass, keys, options);
+  }
 
-    Statement statement = Statement.of(String.format("select * from %s", tableName));
-    return this.find(entityClass, statement, options);
+  @Override
+  public <T> List<T> find(Class<T> entityClass, Statement statement, Options.QueryOption... options) {
+    return readContextTemplate.find(this.databaseClient.singleUse(), entityClass, statement, options);
+  }
+
+  @Override
+  public <T> List<T> findAll(Class<T> entityClass, Options.ReadOption... options) {
+    BasicSpannerPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entityClass);
+    return readContextTemplate.find(this.databaseClient.singleUse(), entityClass, KeySet.all(), options);
   }
 
   @Override
@@ -88,7 +92,7 @@ public class SpannerTemplate implements SpannerOperations, ApplicationContextAwa
   }
 
   @Override
-  public void delete(Class<?> entityClass, Key key) {
+  public <T> void delete(Class<T> entityClass, Key key) {
     BasicSpannerPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entityClass);
     String tableName = persistentEntity.tableName();
     Mutation mutation = Mutation.delete(tableName, key);
@@ -96,9 +100,32 @@ public class SpannerTemplate implements SpannerOperations, ApplicationContextAwa
   }
 
   @Override
-  public void delete(Object object) {
-    Mutation mutation = this.mutationFactory.delete(object);
+  public void delete(Object entity) {
+    Mutation mutation = this.mutationFactory.delete(entity);
     this.databaseClient.write(Arrays.asList(mutation));
+  }
+
+  @Override
+  public <T> void delete(Class<T> entityClass, Iterable<? extends T> entities) {
+    Mutation mutation = this.mutationFactory.delete(entityClass, entities);
+    this.databaseClient.write(Arrays.asList(mutation));
+  }
+
+  @Override
+  public <T> void delete(Class<T> entityClass, KeySet keys) {
+    BasicSpannerPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entityClass);
+    String tableName = persistentEntity.tableName();
+    Mutation delete = Mutation.delete(tableName, keys);
+    this.databaseClient.write(Arrays.asList(delete));
+  }
+
+  @Override
+  public <T> long count(Class<T> entityClass) {
+    BasicSpannerPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entityClass);
+    ResultSet resultSet = this.databaseClient.singleUse()
+        .executeQuery(Statement.of(String.format("select count(*) from %s", persistentEntity.tableName())));
+    resultSet.next();
+    return resultSet.getLong(0);
   }
 
   @Override

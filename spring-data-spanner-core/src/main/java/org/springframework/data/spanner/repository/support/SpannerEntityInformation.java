@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package org.springframework.data.spanner.core.mapping;
+package org.springframework.data.spanner.repository.support;
 
+import org.springframework.data.repository.core.EntityInformation;
+import org.springframework.data.repository.core.support.AbstractEntityInformation;
 
-import java.lang.annotation.*;
+import java.io.Serializable;
 
-@Documented
-@Target(value= ElementType.FIELD)
-@Retention(value= RetentionPolicy.RUNTIME)
-public @interface Column {
-  String name();
+/**
+ * Created by rayt on 3/23/17.
+ */
+public interface SpannerEntityInformation<T, ID extends Serializable> extends EntityInformation<T, ID> {
 }

@@ -22,5 +22,5 @@ import org.springframework.data.mapping.PersistentProperty;
  * Created by rayt on 3/14/17.
  */
 public interface SpannerPersistentProperty extends PersistentProperty<SpannerPersistentProperty> {
-  String getFieldName();
+  String getColumnName();
 }

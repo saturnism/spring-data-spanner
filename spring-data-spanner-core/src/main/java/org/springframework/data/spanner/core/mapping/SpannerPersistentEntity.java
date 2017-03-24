@@ -23,4 +23,6 @@ import org.springframework.data.mapping.PersistentEntity;
  */
 public interface SpannerPersistentEntity<T> extends PersistentEntity<T, SpannerPersistentProperty> {
   String tableName();
+  SpannerPersistentProperty getPersistentPropertyByColumnName(String columnName);
+  Iterable<String> columns();
 }
