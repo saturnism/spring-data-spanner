@@ -48,6 +48,11 @@ public class SpannerTemplate implements SpannerOperations, ApplicationContextAwa
     this.readContextTemplate = new SpannerReadContextTemplate(mappingContext, this.objectMapper);
   }
 
+  @Override
+  public SpannerMappingContext getMappingContext() {
+    return mappingContext;
+  }
+
   public DatabaseClient getDatabaseClient() {
     return this.databaseClient;
   }

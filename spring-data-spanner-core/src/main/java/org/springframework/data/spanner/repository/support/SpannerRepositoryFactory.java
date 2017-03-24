@@ -16,29 +16,66 @@
 
 package org.springframework.data.spanner.repository.support;
 
-import org.springframework.data.repository.core.EntityInformation;
+import org.springframework.data.mapping.model.MappingException;
+import org.springframework.data.querydsl.QueryDslPredicateExecutor;
 import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
+import org.springframework.data.spanner.core.SpannerOperations;
+import org.springframework.data.spanner.core.mapping.BasicSpannerPersistentEntity;
+import org.springframework.data.spanner.core.mapping.SpannerMappingContext;
+import org.springframework.data.spanner.core.mapping.SpannerPersistentEntity;
 
 import java.io.Serializable;
+
+import static org.springframework.data.querydsl.QueryDslUtils.QUERY_DSL_PRESENT;
 
 /**
  * Created by rayt on 3/23/17.
  */
 public class SpannerRepositoryFactory extends RepositoryFactorySupport {
-  @Override
-  public <T, ID extends Serializable> EntityInformation<T, ID> getEntityInformation(Class<T> aClass) {
-    return null;
+  private final SpannerOperations operations;
+  private final SpannerMappingContext mappingContext;
+
+  public SpannerRepositoryFactory(SpannerOperations operations) {
+    this.operations = operations;
+    this.mappingContext = operations.getMappingContext();
   }
 
   @Override
-  protected Object getTargetRepository(RepositoryInformation repositoryInformation) {
-    return null;
+  protected Object getTargetRepository(RepositoryInformation information) {
+    SpannerEntityInformation<?, Serializable> entityInformation = getEntityInformation(information.getDomainType(),
+        information);
+    return getTargetRepositoryViaReflection(information, entityInformation, operations);
   }
+
+  @Override
+  public <T, ID extends Serializable> SpannerEntityInformation<T, ID> getEntityInformation(Class<T> domainClass) {
+    return getEntityInformation(domainClass, null);
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T, ID extends Serializable> SpannerEntityInformation<T, ID> getEntityInformation(Class<T> domainClass,
+                                                                                            RepositoryInformation information) {
+    SpannerPersistentEntity<?> entity = mappingContext.getPersistentEntity(domainClass);
+
+    if (entity == null) {
+      throw new MappingException(
+          String.format("Could not lookup mapping metadata for domain class %s!", domainClass.getName()));
+    }
+
+    BasicSpannerPersistentEntity<T> persistentEntity = (BasicSpannerPersistentEntity<T>) mappingContext.getPersistentEntity(domainClass);
+    return new MappingSpannerEntityInformation<T, ID>(persistentEntity);
+  }
+
 
   @Override
   protected Class<?> getRepositoryBaseClass(RepositoryMetadata repositoryMetadata) {
-    return null;
+    boolean isQueryDslRepository = QUERY_DSL_PRESENT
+        && QueryDslPredicateExecutor.class.isAssignableFrom(repositoryMetadata.getRepositoryInterface());
+
+//    return isQueryDslRepository ? QueryDslSpannerRepository.class : SimpleSpannerRepository.class;
+    return SimpleSpannerRepository.class;
+
   }
 }

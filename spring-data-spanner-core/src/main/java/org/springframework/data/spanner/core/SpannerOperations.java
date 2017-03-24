@@ -17,6 +17,7 @@
 package org.springframework.data.spanner.core;
 
 import com.google.cloud.spanner.*;
+import org.springframework.data.spanner.core.mapping.SpannerMappingContext;
 
 import java.util.List;
 
@@ -24,7 +25,9 @@ import java.util.List;
  * Created by rayt on 3/20/17.
  */
 public interface SpannerOperations {
+  SpannerMappingContext getMappingContext();
   DatabaseClient getDatabaseClient();
+
   <T> T find(Class<T> entityClass, Key key);
   <T> List<T> find(Class<T> entityClass, KeySet keys, Options.ReadOption... options);
   <T> List<T> find(Class<T> entityClass, Statement statement, Options.QueryOption... options);

@@ -16,13 +16,21 @@
 
 package org.springframework.data.spanner.repository.config;
 
+import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.core.annotation.AnnotationAttributes;
+import org.springframework.data.config.ParsingUtils;
+import org.springframework.data.repository.config.AnnotationRepositoryConfigurationSource;
 import org.springframework.data.repository.config.RepositoryConfigurationExtensionSupport;
+import org.springframework.data.repository.config.XmlRepositoryConfigurationSource;
 import org.springframework.data.spanner.repository.support.SpannerRepositoryFactoryBean;
+import org.w3c.dom.Element;
 
 /**
  * Created by rayt on 3/23/17.
  */
 public class SpannerRepositoryConfigurationExtension extends RepositoryConfigurationExtensionSupport {
+  private static final String SPANNER_TEMPLATE_REF = "spanner-template-ref";
+
   @Override
   protected String getModulePrefix() {
     return "spanner";
@@ -31,5 +39,19 @@ public class SpannerRepositoryConfigurationExtension extends RepositoryConfigura
   @Override
   public String getRepositoryFactoryClassName() {
     return SpannerRepositoryFactoryBean.class.getName();
+  }
+
+  @Override
+  public void postProcess(BeanDefinitionBuilder builder, AnnotationRepositoryConfigurationSource config) {
+    AnnotationAttributes attributes = config.getAttributes();
+
+    builder.addPropertyReference("spannerOperations", attributes.getString("spannerTemplateRef"));
+  }
+
+  @Override
+  public void postProcess(BeanDefinitionBuilder builder, XmlRepositoryConfigurationSource config) {
+    Element element = config.getElement();
+
+    ParsingUtils.setPropertyReference(builder, element, SPANNER_TEMPLATE_REF, "spannerOperations");
   }
 }

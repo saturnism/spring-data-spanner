@@ -19,6 +19,9 @@ package org.springframework.data.spanner.repository.support;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.core.support.RepositoryFactoryBeanSupport;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
+import org.springframework.data.spanner.core.SpannerOperations;
+import org.springframework.data.spanner.core.mapping.SpannerMappingContext;
+import org.springframework.util.Assert;
 
 import java.io.Serializable;
 
@@ -27,6 +30,10 @@ import java.io.Serializable;
  */
 public class SpannerRepositoryFactoryBean<T extends Repository<S, ID>, S, ID extends Serializable>
     extends RepositoryFactoryBeanSupport<T, S, ID> {
+
+  private SpannerOperations operations;
+  private SpannerMappingContext mappingContext;
+
   /**
    * Creates a new {@link SpannerRepositoryFactoryBean} for the given repository interface.
    *
@@ -36,8 +43,28 @@ public class SpannerRepositoryFactoryBean<T extends Repository<S, ID>, S, ID ext
     super(repositoryInterface);
   }
 
+  public void setSpannerOperations(SpannerOperations operations) {
+    this.operations = operations;
+  }
+
+  public void setMappingContext(SpannerMappingContext mappingContext) {
+    super.setMappingContext(mappingContext);
+    this.mappingContext = mappingContext;
+  }
+
   @Override
   protected RepositoryFactorySupport createRepositoryFactory() {
-    return new SpannerRepositoryFactory();
+    return new SpannerRepositoryFactory(operations);
+  }
+
+  @Override
+  public void afterPropertiesSet() {
+
+    super.afterPropertiesSet();
+    Assert.notNull(operations, "SpannerTemplate must not be null!");
+
+    if (mappingContext == null) {
+      setMappingContext(operations.getMappingContext());
+    }
   }
 }
