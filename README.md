@@ -1,3 +1,3 @@
 This is not an official Google product.
 
-For sample usage, see https://github.com/saturnism/spring-data-spanner-demo
+This project is superseded and moved into [Spring Cloud GCP](http://cloud.spring.io/spring-cloud-gcp/).
